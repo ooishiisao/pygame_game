@@ -1,3 +1,5 @@
+"""FuwaFuwaゲーム"""
+
 import sys
 import math
 import random
@@ -7,12 +9,11 @@ from pygame.locals import QUIT, Rect, MOUSEBUTTONDOWN, MOUSEMOTION, KEYDOWN, K_S
 import game
 
 class Ship(pygame.sprite.Sprite):
-    """Shipクラス
-    自機スプライト
-    """
+    """自機スプライトクラス"""
 
     def __init__(self, group):
         """初期化
+
         スプライトのimage、rectを設定
         Args:
             group (Group) : 所属させるグループ
@@ -27,6 +28,7 @@ class Ship(pygame.sprite.Sprite):
 
     def update(self, soar_flag):
         """更新
+
         自機の位置を更新
         Args:
             soar_flag (bool) : True 上昇 / False 下降
@@ -39,25 +41,22 @@ class Ship(pygame.sprite.Sprite):
 
 
 class ShipGroup(pygame.sprite.GroupSingle):
-    """Shipグループクラス
-    自機グループ。特別な処理はない。
+    """自機グループクラス
+
+    特別な処理はない。
     """
 
     def __init__(self):
-        """初期化
-        Args:
-            group (Group) : 所属させるグループ
-        """
+        """初期化"""
         super().__init__()
 
 
 class Wall(pygame.sprite.Sprite):
-    """Wallグループクラス
-    壁スプライト
-    """
+    """壁スプライトクラス"""
 
     def __init__(self, group, left, top, width, height, color=(128,32,0)):
         """初期化
+
         スプライトのimage、rectを設定
         Args:
             group (Group) : 所属させるグループ
@@ -71,26 +70,20 @@ class Wall(pygame.sprite.Sprite):
         self.image = pygame.Surface((width, height))
         self.image.fill(color)
 
-    def __del__(self):
-        """終了
-        """
-        #print("del")
-        pass
-
     def update(self):
         """更新
+        
         壁の位置を左に更新（スクロール）
         """
         self.rect.move_ip(-self.rect.width, 0)
 
 
 class WallGroup(pygame.sprite.Group):
-    """Wallグループクラス
-    壁グループ
-    """
+    """壁グループクラス"""
 
     def __init__(self, window_width, window_height):
         """初期化
+
         Args:
             window_width (int) : ウィンドウの幅
             window_height (int) : ウィンドウの高さ
@@ -123,8 +116,8 @@ class WallGroup(pygame.sprite.Group):
             Wall(self, x, lower, self.wall_width, window_height - lower)
 
     def update(self):
-        """オブジェクト更新
-        """
+        """更新"""
+
         # 壁グループの更新
         # 画面右のすぐ外に壁を作成
         self.generate_wall_1()
@@ -173,8 +166,8 @@ class WallGroup(pygame.sprite.Group):
             return False
 
     def generate_wall_0(self):
-        """Windowの右外側に壁を生成
-        """
+        """Windowの右外側に壁を生成"""
+
         upper = self.hole0_y - self.hole0_r
         if upper < self.wall_limit:
             upper = self.wall_limit
@@ -185,8 +178,8 @@ class WallGroup(pygame.sprite.Group):
         Wall(self, self.window_width, lower, self.wall_width, self.window_height - lower)
 
     def generate_wall_1(self):
-        """Windowの右外側に壁を生成
-        """
+        """Windowの右外側に壁を生成"""
+
         (x1, y1, r1) = (self.hole0_x, self.hole0_y, self.hole0_r)
         (x2, y2, r2) = (self.hole1_x, self.hole1_y, self.hole1_r)
 
@@ -256,18 +249,17 @@ class WallGroup(pygame.sprite.Group):
             lower = y2 + (r2 ** 2 - (self.window_width - x2) ** 2) ** 0.5
         Wall(self, self.window_width, lower, self.wall_width, self.window_height - lower)
 
+
 class FuwaFuwaGame(game.Game):
-    """FuwaFuwaGameクラス
-    フワフワゲーム
-    """
+    """FuwaFuwaGameクラス"""
 
     SCENE_TITLE = 0
     SCENE_GAME  = 1
     SCENE_END   = 2
 
     def __init__(self):
-        """初期化
-        """
+        """初期化"""
+
         super().__init__()
         pygame.key.set_repeat(5,10)
 
@@ -282,6 +274,7 @@ class FuwaFuwaGame(game.Game):
 
     def on_frame(self, scene):
         """フレーム処理
+
         Args:
             scene (int) : 0 タイトル / 1 ゲーム / 2 終了
         Returns:
@@ -295,6 +288,7 @@ class FuwaFuwaGame(game.Game):
 
     def on_frame_title(self):
         """フレーム処理（タイトル）
+
         Returns:
             int : 0 タイトル / 1 ゲーム
         """
@@ -314,7 +308,8 @@ class FuwaFuwaGame(game.Game):
         return scene
 
     def on_frame_game(self, scene):
-        """フレーム処理（タイトル）
+        """フレーム処理（ゲーム）
+
         Returns:
             int : 1 ゲーム / 2 終了
         """
@@ -350,12 +345,13 @@ class FuwaFuwaGame(game.Game):
 
 
 def main():
-    """メイン関数
-    """
+    """メイン"""
+
     # ゲームオブジェクトを作成
     g = FuwaFuwaGame()
     # メイン処理
     g.run()
+
 
 if __name__ == '__main__':
     main()

@@ -3,14 +3,11 @@ import pygame
 from pygame.locals import QUIT, Rect, MOUSEBUTTONDOWN, MOUSEMOTION
 
 class Game(object):
-    """Gameクラス
-    """
-
+    """Gameクラス"""
     SCENE_INITIAL = 0
 
     def __init__(self, width=800, height=600):
-        """初期化
-        """
+        """初期化"""
         # 初期化
         pygame.init()
         # FPS Clock取得
@@ -24,13 +21,11 @@ class Game(object):
         self.surface = pygame.display.set_mode((self.window_width, self.window_height))
 
     def __del__(self):
-        """終了
-        """
+        """終了"""
         pygame.quit()
 
     def run(self):
-        """メイン処理
-        """
+        """メイン処理"""
         # シーン設定
         scene = Game.SCENE_INITIAL
         # メインループ
@@ -47,13 +42,13 @@ class Game(object):
 
     def on_frame(self, scene):
         """フレームごとの処理
+
         派生クラスで実装
         """
         pass
 
 def main():
-    """フレームごとの処理
-    """
+    """メイン"""
     pass
 
 if __name__ == '__main__':
