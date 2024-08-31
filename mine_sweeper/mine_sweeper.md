@@ -1,123 +1,126 @@
 
+## クラス図
 ```puml
 @startuml
 
-class Config
+class Game
 {
-    board_xsize
-    board_ysize
+    + FPS
+    + clock
+    + font
+    + window_width
+    + window_height
+    + surface
 
-    path_image_mine
-    path_image_closed
-
-    cell_width
-
-    cell_height
-    screen_width
-    screen_height
-
+    + run()
+    # on_frame(シーン)
 }
 
-class Controller 
+class MineSweeperGame
 {
-    cells[][]
-    init_game()
-    main_loop()
+    # on_frame(シーン)
+    - mouse_x
+    - mouse_y
+    - clear_surf
 }
+
+class BoardGroup
 
 class Board
 {
-    open(xpos, ypos) : bool
-    mark(xpos, ypos) : void
-    clear()
-    dwar()
+    + size
+    + cells[]
+    + create(盤面サイズ)
+    + open(マス目位置)
+    + mark(マス目位置)
 }
+
+class CellGroup
 
 class Cell
 {
-    type
-    state
-    mark
-    image
-    image_mine
-    image_mine_suspected
-    image_open
-    image_closed
-    open(void) : bool
-    mark(bool) : void
+    + neighbors[]
+    + type
+    + open_flag
+    + mark_flag
+    + create(type)
+    + set_neighbors(NW,N,NE,W,E,SW,S,SE)
+    + open()
+    + mark()
+    + get_bomb_count()
+    
 }
 
-Controller "1" -- "1" Board : 盤面操作、描画
-Board "1" *- "*" Cell : 盤面操作、描画
+Game <|- MineSweeperGame
+MineSweeperGame *-- BoardGroup : update(マウス位置)
+MineSweeperGame *-- BoardGroup : draw()
+BoardGroup *- CellGroup : draw()
+BoardGroup "1" *--- "1" Board : 各種操作(マス目位置)
+BoardGroup "1" *--- "1" Board : draw()
+CellGroup *--- Cell : draw()で参照
+Board "1" *- "*" Cell : 各種操作()
+Board "1" *- "*" Cell : draw()で参照
+Sprite <|-- Board
+Sprite <|-- Cell
+
+class Config
+{
+    + screen_width
+    + screen_height
+    + board_width
+    + board_height
+}
 
 @enduml
 ```
 
-
 ---
 - class Config
-    - board_size_x
-        ボードのセル数X [セル]
-    - board_size_y
-        ボードのセル数Y [セル]
-
-    - image_mine
-        地雷イメージ（サーフェース）
-    - image_closed
-        地面イメージ（サーフェース）
-
-    - cell_width
-        セル幅 [ピクセル]
-    - cell_height
-        セル高 [ピクセル]
     - screen_width
         スクリーン幅 [ピクセル]
     - screen_height
         スクリーン高 [ピクセル]
-
----
-- class Controller
-    - init()
-        ゲームの初期化
-    - main_loop()
-        メインループ処理
-        - マウスイベントを拾って、操作結果反映。
-        - 描画（クリアと描画）
+    - board_width
+        ボード幅 [セル]
+    - board_height
+        ボード高 [セル]
 
 ---
 - class Board
+    - size
+        盤面サイズ
     - cells[][]
-        Cellオブジェクトを保持する2次元配列
-    - init()
+        セルを保持する2次元配列（2行2列余分に確保）
+    - create(盤面サイズ)
         以下を実施。
-        - Cellオブジェクトの生成
+        - セルの生成
+        - セル同士のリンクを張る。
         - 地雷の設置
-        - 各Cellオブジェクトの周りの地雷のカウント→image_openの作成
-    - mark()
-        盤面操作（マーキング）
-        座標に対応するCellに対してmark()を呼び出す。
-    - open()
-        盤面操作（地面を暴く）
-        座標に対応するCellに対してopen()を呼び出す。
-        周りの地雷数が0の場合は、周りを開いていく。
+    - open(マス目位置)
+        盤面操作（地面を開ける）
+    - mark(マス目位置)
+        盤面操作（マーキングする）
 
 ---
 - class Cell
     - type
-        - TYPE_MINE(-1) : 地雷
-        - TYPE_NONE(0)～8 : 非地雷。周りの地雷数。
-    - state_open
-        - STATE_OPEN(0) : 非地雷。周りの地雷数。
-        - STATE_CLOSED : 地雷
-    - state_mark
-        - MARK_ON : マークあり
-        - MARK_OFF : マークなし
-    - setMine()
-        地雷の設置。成功でTrue
-    - setCount()
-        周りの地雷数を設定
-    - mark()
-        マーキングの設定、解除
+        - TYPE_MINE : 地雷
+        - TYPE_NONE : 非地雷。周りの地雷数。
+    - open_flag
+        - OPEN   : 開封済
+        - CLOSED : 未開封
+    - mark_flag
+        - NOMARK : マークあり
+        - MARKED : マークなし
+    - create(type)
+        地雷を設置。
+    - set_neighbors(NW,N,NE,W,E,SW,S,SE)
+        周りのセルとリンクを張る。
     - open()
-        地雷を確認する
+        地面を開封する
+        周りの地雷がない場合、周りを開いていく。
+    - mark()
+        マーキングする。
+    - get_bomb_count()
+        周りの地雷数を返す。
 

@@ -333,11 +333,11 @@ class FuwaFuwaGame(game.Game):
                 scene = FuwaFuwaGame.SCENE_END
                 #pass
 
-            # オブジェクトクリア
+            # 前回描画分をサーフェイスからクリア
             self.shipgroup.clear(self.surface, self.clear_surf)
             self.wallgroup.clear(self.surface, self.clear_surf)
 
-        # オブジェクト描画
+        # 今回描画分をサーフェイスに描画
         self.shipgroup.draw(self.surface)
         self.wallgroup.draw(self.surface)
 

@@ -1,83 +1,5 @@
 # fuwafuwa
 
-## クラス図
-```puml
-@startuml
-
-class Game
-{
-    + FPS
-    + clock
-    + font
-    + window_width
-    + window_height
-    + surface
-
-    + run()
-    # on_frame(シーン)
-}
-
-class FuwaFuwaGame
-{
-    # on_frame(シーン)
-    - shipgroup
-    - wallgroup
-    - mouse_x
-    - mouse_y
-    - clear_surf
-}
-
-class Ship
-{
-    + rect
-    + image
-    + update()
-    ..
-    + velocity
-    + acceleration
-}
-
-class ShipGroup
-{
-    + update()
-    + draw()
-    + clear()
-    ..
-}
-
-class Wall
-{
-    + rect
-    + image
-    + update()
-    ..
-}
-
-class WallGroup
-{
-    + update()
-    + draw()
-    + clear()
-    ..
-    wall_limit
-    wall_width
-    window_width
-    window_height
-    hole0_x
-    hole0_y
-    hole0_radius
-    counter
-}
-
-Game <|- FuwaFuwaGame
-FuwaFuwaGame "1" *-- "1" ShipGroup : update()\nclear()\ndraw()
-FuwaFuwaGame "1" *-- "1" WallGroup : update()\nclear()\ndraw()
-ShipGroup "1" *- "*" Ship : update()\n描画(rect,image)
-WallGroup "1" o- "*" Wall : update()\n描画(rect,image)
-
-@enduml
-```
-
 ## シーケンス図
 ```puml
 @startuml
@@ -142,6 +64,84 @@ return
 end
 
 return
+@enduml
+```
+
+## クラス図
+```puml
+@startuml
+
+class Game
+{
+    + FPS
+    + clock
+    + font
+    + window_width
+    + window_height
+    + surface
+
+    + run()
+    # on_frame(シーン)
+}
+
+class FuwaFuwaGame
+{
+    # on_frame(シーン)
+    - shipgroup
+    - wallgroup
+    - mouse_x
+    - mouse_y
+    - clear_surf
+}
+
+class Ship
+{
+    + rect
+    + image
+    + update()
+    ..
+    + velocity
+    + acceleration
+}
+
+class ShipGroup
+{
+    + update()
+    + clear()
+    + draw()
+    ..
+}
+
+class Wall
+{
+    + rect
+    + image
+    + update()
+    ..
+}
+
+class WallGroup
+{
+    + update()
+    + clear()
+    + draw()
+    ..
+    wall_limit
+    wall_width
+    window_width
+    window_height
+    hole0_x
+    hole0_y
+    hole0_radius
+    counter
+}
+
+Game <|- FuwaFuwaGame
+FuwaFuwaGame "1" *-- "1" ShipGroup : スプライト更新と描画
+FuwaFuwaGame "1" *-- "1" WallGroup : スプライト更新と描画
+ShipGroup "1" *-- "*" Ship : スプライト更新と描画データ参照
+WallGroup "1" *-- "*" Wall : スプライト更新と描画データ参照
+
 @enduml
 ```
 
