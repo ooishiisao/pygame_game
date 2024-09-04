@@ -252,29 +252,127 @@ class Config:
     mine_count    = 0
 
 class Cell():
-    TYPE_NONE = 0
-    TYPE_MINE = 1
+    TYPE_NONE   = 0
+    TYPE_MINE   = 1
+    STATE_CLOSED = 0
+    STATE_OPEN   = 1
+    STATE_NOMARK = 0
+    STATE_MARKED = 1
+    POS_NW = 0
+    POS_N  = 1
+    POS_NE = 2
+    POS_W  = 3
+    POS_E  = 4
+    POS_SW = 5
+    POS_S  = 6
+    POS_SE = 7
 
     def __init__(self):
-        self.__type = self.TYPE_NONE
-        pass
+        """初期化"""
+
+        self.__mine_type  = Cell.TYPE_NONE
+        self.__open_state = Cell.STATE_CLOSED
+        self.__mark_state = Cell.STATE_NOMARK
+        self.__neighbors = [None, None, None, None, None, None, None, None]
 
     @property
-    def type(self):
-        return self.__type
+    def mine_type(self):
+        return self.__mine_type
 
-    @type.setter
-    def type(self, value):
-        if(value == self.TYPE_NONE or value == self.TYPE_MINE):
-            self.__type = value
+    @property
+    def open_state(self):
+        return self.__open_state
 
+    @property
+    def mark_state(self):
+        return self.__mark_state
 
+    def set_neighbor(self, pos, cell):
+        """隣のセルとのリンクを設定"""
+        if( pos >= Cell.POS_NW and pos <= Cell.POS_SE):
+            self.__neighbors[pos] = cell
 
-class BoardGroup(pygame.sprite.Group, pygame.sprite.Sprite):
+    def set_mine(self):
+        """地雷をセット"""
+        if(self.__mine_type == Cell.TYPE_NONE):
+            self.__type = Cell.TYPE_MINE
+            return True
+        else:
+            return False
 
-    def __init__(self, board):
-        super().__init__(self)
+    def open(self):
+        """セルを暴く"""
+        self.__open_state = Cell.STATE_OPEN
+        if( self.__mine_type == Cell.TYPE_NONE ):
+            #周りのセルを開く
+            #TODO
+            pass
+        return self.__mine_type
 
+    def mark(self):
+        """セルをマーキングする"""
+        if( self.__mark_state == Cell.STATE_NOMARK ):
+            self.__mark_state == Cell.STATE_MARKED
+        else:
+            self.__mark_state == Cell.STATE_NOMARK
+
+    def get_mine_count(self):
+        """周りの地雷の数を返す"""
+        count = 0
+        for cell in self.__neighbors:
+            if cell is not None and cell.mine_type == Cell.TYPE_MINE:
+                count += 1
+        return count
+
+class CellSprite(Cell, pygame.sprite.Sprite):
+    pass
+
+class Board():
+
+    def __init__(self):
+        super().__init__()
+
+        self.__width      = config.board_width
+        self.__height     = config.board_height 
+        self.__mine_count = config.mine_count
+
+        #Cellオブジェクト作成
+        self.__cells = []
+        for x, y in product(range(self.__width), range(self.__height)):
+            cell = Cell()
+            self.__cells.append(cell)
+
+        #周辺のCellとのリンク
+        for x, y in product(range(self.__width), range(self.__height)):
+            pos = 0
+            cell : Cell = self.__cells[y*self.__width + x]
+            for xx, yy in product((x-1, x, x+1), (y-1, y, y+1)):
+                if(xx >= 0 and xx < self.__width and yy >= 0 and yy < self.__height):
+                    neighbor = self.__cells[yy*self.__width + xx]
+                    cell.set_neighbor(pos, neighbor)
+                pos+=1
+
+        #地雷設置
+        count = 0
+        while count < self.__mine_count :
+            val = randint(0, self.__width * self.__height - 1)
+            x = val % self.__width
+            y = val // self.__height
+            if self.__cells[y*self.__width + x].mine_type == Cell.TYPE_NONE:
+                print("[DEBUG]MINE_SET:", x, y)
+                count += 1
+
+    def open(self, x, y):
+        ret = self.__cells[self.__width * y + y].open()
+        return ret
+
+    def mark(self, x, y):
+        self.__cells[self.__width * y + y].mark()
+
+class BoardSprite(pygame.sprite.Sprite):
+
+    def __init__(self):
+        super().__init__()
         left   = 0
         top    = 0
         right  = config.screen_width
@@ -282,36 +380,14 @@ class BoardGroup(pygame.sprite.Group, pygame.sprite.Sprite):
         self.rect = Rect(left, top, right, bottom)
         self.image = pygame.Surface((config.screen_width, config.screen_height))
         self.image.fill((128,128,128))
+        self.board = Board()
 
-class Board():
+class BoardGroup(pygame.sprite.Group):
 
-    def __init__(self, width, height, mine_count):
-        super().__init__()
-
-        self.width = width
-        self.height = height
-        self.mine_count = mine_count
-
-        #2次元リスト作成
-        self.cells = []
-
-        #Cellオブジェクト作成
-        for x in range(width):
-            print(x)
-            self.cells.append(list())
-            for y in range(height):
-                cell = Cell()
-                self.cells[x].append(cell)
-
-        #地雷設置
-        count = 0
-        while count < mine_count:
-            val = randint(0, width * height - 1)
-            x = val % width
-            y = val // height
-            if self.cells[x][y].type == Cell.TYPE_NONE:
-                print("SET:", x, y)
-                count += 1
+    def __init__(self):
+        super().__init__(self)
+        self.board = BoardSprite()
+        self.add(self.board)
 
 class MineSweeperGame(Game):
     """MineSweeperGameクラス"""
@@ -325,12 +401,9 @@ class MineSweeperGame(Game):
 
         super().__init__(width, height)
 
-        # 盤面
-        self.board = Board(config.board_width, config.board_height, config.mine_count)
-        self.boardgroup = BoardGroup(self.board)
-
-
-        self.clear_surf = pygame.Surface((self.window_width,self.window_height))
+        # 盤面（とセル）
+        self.board = BoardGroup()
+        self.clear_surf = pygame.Surface((width, height))
         self.clear_surf.fill((0,0,0))
         self.scene = self.SCENE_TITLE
 
@@ -397,7 +470,7 @@ class MineSweeperGame(Game):
             # 前回描画分をサーフェイスからクリア
 
         # 今回描画分をサーフェイスに描画
-        self.boardgroup.draw(self.surface)
+        self.board.draw(self.surface)
 
         return scene_next
 
