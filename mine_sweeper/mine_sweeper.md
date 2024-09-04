@@ -26,42 +26,60 @@ class MineSweeperGame
 
 class BoardGroup
 
+class BoardSprite
+{
+    + 位置
+}
+
 class Board
 {
-    + size
+    + width
+    + height
     + cells[]
-    + create(盤面サイズ)
+    + init(盤面サイズ)
     + open(マス目位置)
     + mark(マス目位置)
 }
 
 class CellGroup
 
+class CellSprite
+{
+    + 位置
+}
 class Cell
 {
     + neighbors[]
-    + type
-    + open_flag
-    + mark_flag
-    + create(type)
-    + set_neighbors(NW,N,NE,W,E,SW,S,SE)
+    + mine_type
+    + open_state
+    + mark_state
+    + init()
+    + set_neighbor(pos, cell)
+    + set_mine()
     + open()
     + mark()
-    + get_bomb_count()
+    + get_mine_count()
     
 }
 
 Game <|- MineSweeperGame
-MineSweeperGame *-- BoardGroup : update(マウス位置)
-MineSweeperGame *-- BoardGroup : draw()
-BoardGroup *- CellGroup : draw()
-BoardGroup "1" *--- "1" Board : 各種操作(マス目位置)
-BoardGroup "1" *--- "1" Board : draw()
-CellGroup *--- Cell : draw()で参照
-Board "1" *- "*" Cell : 各種操作()
-Board "1" *- "*" Cell : draw()で参照
-Sprite <|-- Board
-Sprite <|-- Cell
+MineSweeperGame *-- BoardGroup : \
+    update(マウス位置)\n\
+    draw() 描画
+BoardGroup *- CellGroup : \
+    update(), draw()
+BoardGroup "1" *-- "1" BoardSprite : \
+    update() 各種操作(マス目位置)\n\
+    update() イメージ更新
+BoardSprite "1" *-- "1" Board : \
+    各種操作(マス目位置)\n\
+    描画データ参照
+CellGroup *-- CellSprite : \
+    update() イメージ更新
+CellSprite *-- Cell : \
+    描画データ参照
+
+Board "1" *- "*" Cell : 各種操作(セル)
 
 class Config
 {
@@ -91,7 +109,7 @@ class Config
         盤面サイズ
     - cells[][]
         セルを保持する2次元配列（2行2列余分に確保）
-    - create(盤面サイズ)
+    - init(盤面サイズ)
         以下を実施。
         - セルの生成
         - セル同士のリンクを張る。
@@ -104,18 +122,19 @@ class Config
 ---
 - class Cell
     - type
+        地雷を設置、確認
         - TYPE_MINE : 地雷
         - TYPE_NONE : 非地雷。周りの地雷数。
     - open_flag
-        - OPEN   : 開封済
-        - CLOSED : 未開封
+        - FLAG_OPEN   : 開封済
+        - FLAG_CLOSED : 未開封
     - mark_flag
-        - NOMARK : マークあり
-        - MARKED : マークなし
-    - create(type)
-        地雷を設置。
-    - set_neighbors(NW,N,NE,W,E,SW,S,SE)
-        周りのセルとリンクを張る。
+        - FLAG_NOMARK : マークあり
+        - FLAG_MARKED : マークなし
+    - init()
+        オブジェクト生成
+    - set_neighbors(隣セルの位置, セル)
+        隣のセルとリンクを張る。
     - open()
         地面を開封する
         周りの地雷がない場合、周りを開いていく。
