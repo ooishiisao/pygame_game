@@ -63,23 +63,20 @@ class Cell
 }
 
 Game <|- MineSweeperGame
-MineSweeperGame *-- BoardGroup : \
-    update(マウス位置)\n\
-    draw() 描画
-BoardGroup *- CellGroup : \
-    update(), draw()
-BoardGroup "1" *-- "1" BoardSprite : \
-    update() 各種操作(マス目位置)\n\
-    update() イメージ更新
-BoardSprite "1" *-- "1" Board : \
-    各種操作(マス目位置)\n\
-    描画データ参照
-CellGroup *-- CellSprite : \
-    update() イメージ更新
-CellSprite *-- Cell : \
-    描画データ参照
+MineSweeperGame  "1" *-- "1" Board
+MineSweeperGame  "1" *-- "1" BoardGroup
+MineSweeperGame  "1" *-- "1" CellGroup
 
-Board "1" *- "*" Cell : 各種操作(セル)
+Board            "1" *-   "*" Cell
+
+Board                <--      BoardGroup
+Board                <--      BoardSprite
+BoardGroup       "1" *-  "1"  BoardSprite
+
+Cell                 <---     CellGroup
+Cell                 <---     CellSprite
+CellGroup        "1" *-   "*" CellSprite
+
 
 class Config
 {

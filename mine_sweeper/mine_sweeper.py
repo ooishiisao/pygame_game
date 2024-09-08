@@ -267,13 +267,23 @@ class Cell():
     POS_S  = 6
     POS_SE = 7
 
-    def __init__(self):
+    def __init__(self, x ,y):
         """初期化"""
-
+        self.__x          = x
+        self.__y          = y
         self.__mine_type  = Cell.TYPE_NONE
         self.__open_state = Cell.STATE_CLOSED
         self.__mark_state = Cell.STATE_NOMARK
         self.__neighbors = [None, None, None, None, None, None, None, None]
+        self.debug = 0
+
+    @property
+    def x(self):
+        return self.__x
+
+    @property
+    def y(self):
+        return self.__y
 
     @property
     def mine_type(self):
@@ -324,31 +334,66 @@ class Cell():
                 count += 1
         return count
 
-class CellSprite(Cell, pygame.sprite.Sprite):
-    pass
+class CellSprite(pygame.sprite.Sprite):
+
+    def __init__(self, cell, image_width, image_height):
+        super().__init__()
+        self.__cell = cell
+        left   = image_width  * cell.x
+        top    = image_height * cell.y
+        right  = image_width - 5
+        bottom = image_height - 5
+        self.rect = Rect(left, top, right, bottom)
+        print(self.rect)
+        self.image = pygame.Surface((image_width - 5, image_height - 5))
+        self.image.fill((128,128,128))
+
+    def update(self, x, y):
+        print("CellSprite", x, y)
+        if x == self.__cell.x and y == self.__cell.y:
+            if self.__cell.debug == 0:
+                self.__cell.debug = 1
+                self.image.fill((128,0,128))
+            else:
+                self.__cell.debug = 0
+                self.image.fill((128,128,0))
+
+class CellGroup(pygame.sprite.Group):
+
+    def __init__(self, cells, image_width, image_height):
+        super().__init__()
+        self.__image_width  = image_width
+        self.__image_height = image_height
+        for cell in cells:
+            self.add(CellSprite(cell, image_width, image_height))
+
+    def update(self, mouse_x, mouse_y):
+        print("CellGroup", mouse_x, mouse_y)
+        x = mouse_x // self.__image_width
+        y = mouse_y // self.__image_height
+        super().update(x, y)
 
 class Board():
 
-    def __init__(self):
+    def __init__(self, width, height, mine_count):
         super().__init__()
-
-        self.__width      = config.board_width
-        self.__height     = config.board_height 
-        self.__mine_count = config.mine_count
+        self.cells = []
+        self.__width      = width
+        self.__height     = height 
+        self.__mine_count = mine_count
 
         #Cellオブジェクト作成
-        self.__cells = []
         for x, y in product(range(self.__width), range(self.__height)):
-            cell = Cell()
-            self.__cells.append(cell)
+            cell = Cell(x, y)
+            self.cells.append(cell)
 
         #周辺のCellとのリンク
         for x, y in product(range(self.__width), range(self.__height)):
             pos = 0
-            cell : Cell = self.__cells[y*self.__width + x]
+            cell : Cell = self.cells[y*self.__width + x]
             for xx, yy in product((x-1, x, x+1), (y-1, y, y+1)):
                 if(xx >= 0 and xx < self.__width and yy >= 0 and yy < self.__height):
-                    neighbor = self.__cells[yy*self.__width + xx]
+                    neighbor = self.cells[yy*self.__width + xx]
                     cell.set_neighbor(pos, neighbor)
                 pos+=1
 
@@ -358,36 +403,48 @@ class Board():
             val = randint(0, self.__width * self.__height - 1)
             x = val % self.__width
             y = val // self.__height
-            if self.__cells[y*self.__width + x].mine_type == Cell.TYPE_NONE:
+            if self.cells[y*self.__width + x].mine_type == Cell.TYPE_NONE:
                 print("[DEBUG]MINE_SET:", x, y)
                 count += 1
 
+    @property
+    def width(self):
+        return self.__width
+
+    @property
+    def height(self):
+        return self.__height
+
+    @property
+    def mine_count(self):
+        return self.__mine_count
+
     def open(self, x, y):
-        ret = self.__cells[self.__width * y + y].open()
+        ret = self.cells[self.__width * y + y].open()
         return ret
 
     def mark(self, x, y):
-        self.__cells[self.__width * y + y].mark()
+        self.cells[self.__width * y + y].mark()
 
 class BoardSprite(pygame.sprite.Sprite):
 
-    def __init__(self):
+    def __init__(self, board):
         super().__init__()
         left   = 0
         top    = 0
-        right  = config.screen_width
-        bottom = config.screen_height
+        right  = config.screen_width-2
+        bottom = config.screen_height-2
         self.rect = Rect(left, top, right, bottom)
         self.image = pygame.Surface((config.screen_width, config.screen_height))
-        self.image.fill((128,128,128))
-        self.board = Board()
+        self.image.fill((128,0,0))
 
 class BoardGroup(pygame.sprite.Group):
 
-    def __init__(self):
+    def __init__(self, board):
         super().__init__(self)
-        self.board = BoardSprite()
-        self.add(self.board)
+        self.board       = board
+        self.boardsprite = BoardSprite(board)
+        self.add(self.boardsprite)
 
 class MineSweeperGame(Game):
     """MineSweeperGameクラス"""
@@ -398,18 +455,14 @@ class MineSweeperGame(Game):
 
     def __init__(self, width=800, height=600):
         """初期化"""
-
         super().__init__(width, height)
-
         # 盤面（とセル）
-        self.board = BoardGroup()
         self.clear_surf = pygame.Surface((width, height))
         self.clear_surf.fill((0,0,0))
         self.scene = self.SCENE_TITLE
 
     def on_frame(self):
         """フレーム処理
-
         Args:
             scene (int) : 0 タイトル / 1 ゲーム / 2 終了
         Returns:
@@ -423,7 +476,6 @@ class MineSweeperGame(Game):
 
     def on_frame_title(self):
         """フレーム処理（タイトル）
-
         Returns:
             int : 0 タイトル / 1 ゲーム
         """
@@ -436,41 +488,45 @@ class MineSweeperGame(Game):
 
         # イベント処理
         for event in pygame.event.get():
-            if event.type == KEYDOWN:
+            if event.type == KEYDOWN or event.type == MOUSEBUTTONDOWN:
                 scene_next = MineSweeperGame.SCENE_GAME
                 self.surface.fill((0,0,0))
+
+                self.board      = Board(config.board_width, config.board_height, config.mine_count)
+                self.boardgroup = BoardGroup(self.board)
+                self.cellgroup  = CellGroup(self.board.cells, config.screen_width  // self.board.width, config.screen_height // self.board.height)
+
+
                 break
         return scene_next
 
     def on_frame_game(self):
         """フレーム処理（ゲーム）
-
         Returns:
             int : 1 ゲーム / 2 終了
         """
         # 次のシーン
         scene_next = MineSweeperGame.SCENE_GAME
         # イベント処理
-        soar_flag = False
+        mouse_x = 0
+        mouse_y = 0
+        update_flag = False
         for event in pygame.event.get():
-            if event.type == MOUSEMOTION:
-                self.mouse_x, self.mouse_y = event.pos
-            elif event.type == KEYDOWN:
-                if event.key == K_SPACE:
-                    soar_flag = True
+            if event.type == MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = event.pos
+                update_flag = True
 
-        if self.scene == MineSweeperGame.SCENE_GAME:
-            print("aaa")
-            pass
-            # 通常
+        if update_flag == True and self.scene == MineSweeperGame.SCENE_GAME:
             # オブジェクト更新
-
-            # 衝突判定
+            print("aaa", mouse_x, mouse_y)
+            self.boardgroup.update(mouse_x, mouse_y)
+            self.cellgroup.update(mouse_x, mouse_y)
 
             # 前回描画分をサーフェイスからクリア
 
         # 今回描画分をサーフェイスに描画
-        self.board.draw(self.surface)
+        self.boardgroup.draw(self.surface)
+        self.cellgroup.draw(self.surface)
 
         return scene_next
 
@@ -478,13 +534,12 @@ class MineSweeperGame(Game):
 config = Config
 config.screen_width = 600
 config.screen_height = 600
-config.board_width = 20 
-config.board_height = 20
-config.mine_count = 5
+config.board_width = 10 
+config.board_height = 10
+config.mine_count = 2
 
 def main():
     """メイン"""
-
     # ゲームオブジェクトを作成
     g = MineSweeperGame(config.screen_width, config.screen_height)
     # メイン処理
