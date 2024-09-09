@@ -25,10 +25,18 @@ class MineSweeperGame
 }
 
 class BoardGroup
+{
+    + init(盤面, サイズ[pixel])
+    + update()
+    + draw()
+}
 
 class BoardSprite
 {
     + 位置
+    + イメージ
+    + init(盤面, サイズ[pixel])
+    + update()
 }
 
 class Board
@@ -42,10 +50,18 @@ class Board
 }
 
 class CellGroup
+{
+    + init(セル[], サイズ[pixel])
+    + update()
+    + draw()
+}
 
 class CellSprite
 {
     + 位置
+    + イメージ
+    + init(セル, サイズ[pixel])
+    + update()
 }
 class Cell
 {
@@ -64,18 +80,19 @@ class Cell
 
 Game <|- MineSweeperGame
 MineSweeperGame  "1" *-- "1" Board
-MineSweeperGame  "1" *-- "1" BoardGroup
-MineSweeperGame  "1" *-- "1" CellGroup
+MineSweeperGame  "1" *-- "1" BoardGroup   : upadte(クリック位置),draw()
+MineSweeperGame  "1" *-- "1" CellGroup    : upadte(),draw()
 
 Board            "1" *-   "*" Cell
 
-Board                <--      BoardGroup
-Board                <--      BoardSprite
+Board                <--      BoardGroup  : 参照(初期化),各種操作
+Board                <--      BoardSprite : 参照(描画)
 BoardGroup       "1" *-  "1"  BoardSprite
 
-Cell                 <---     CellGroup
-Cell                 <---     CellSprite
+Cell                 <---     CellGroup   : 参照(初期化)
+Cell                 <---     CellSprite  : 参照(描画)
 CellGroup        "1" *-   "*" CellSprite
+BoardGroup           <--      CellGroup   : 参照(セルサイズ[pixel])
 
 
 class Config

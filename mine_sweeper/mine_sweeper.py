@@ -348,15 +348,11 @@ class CellSprite(pygame.sprite.Sprite):
         self.image = pygame.Surface((image_width - 5, image_height - 5))
         self.image.fill((128,128,128))
 
-    def update(self, x, y):
-        print("CellSprite", x, y)
-        if x == self.__cell.x and y == self.__cell.y:
-            if self.__cell.debug == 0:
-                self.__cell.debug = 1
-                self.image.fill((128,0,128))
-            else:
-                self.__cell.debug = 0
-                self.image.fill((128,128,0))
+    def update(self):
+        if self.__cell.open_state == Cell.STATE_OPEN:
+            self.image.fill((128,0,128))
+        else:
+            self.image.fill((128,128,0))
 
 class CellGroup(pygame.sprite.Group):
 
@@ -366,12 +362,6 @@ class CellGroup(pygame.sprite.Group):
         self.__image_height = image_height
         for cell in cells:
             self.add(CellSprite(cell, image_width, image_height))
-
-    def update(self, mouse_x, mouse_y):
-        print("CellGroup", mouse_x, mouse_y)
-        x = mouse_x // self.__image_width
-        y = mouse_y // self.__image_height
-        super().update(x, y)
 
 class Board():
 
@@ -383,12 +373,12 @@ class Board():
         self.__mine_count = mine_count
 
         #Cellオブジェクト作成
-        for x, y in product(range(self.__width), range(self.__height)):
+        for y, x in product(range(self.__width), range(self.__height)):
             cell = Cell(x, y)
             self.cells.append(cell)
 
         #周辺のCellとのリンク
-        for x, y in product(range(self.__width), range(self.__height)):
+        for y, x in product(range(self.__width), range(self.__height)):
             pos = 0
             cell : Cell = self.cells[y*self.__width + x]
             for xx, yy in product((x-1, x, x+1), (y-1, y, y+1)):
@@ -420,7 +410,7 @@ class Board():
         return self.__mine_count
 
     def open(self, x, y):
-        ret = self.cells[self.__width * y + y].open()
+        ret = self.cells[self.__width * y + x].open()
         return ret
 
     def mark(self, x, y):
@@ -428,23 +418,38 @@ class Board():
 
 class BoardSprite(pygame.sprite.Sprite):
 
-    def __init__(self, board):
+    def __init__(self, board, pixel_width, pixel_height):
         super().__init__()
-        left   = 0
-        top    = 0
-        right  = config.screen_width-2
-        bottom = config.screen_height-2
-        self.rect = Rect(left, top, right, bottom)
-        self.image = pygame.Surface((config.screen_width, config.screen_height))
+        self.rect = Rect(0, 0, pixel_width, pixel_height)
+        self.image = pygame.Surface((pixel_width, pixel_height))
         self.image.fill((128,0,0))
 
 class BoardGroup(pygame.sprite.Group):
 
-    def __init__(self, board):
+    def __init__(self, board : Board, pixel_width, pixel_height):
         super().__init__(self)
-        self.board       = board
-        self.boardsprite = BoardSprite(board)
-        self.add(self.boardsprite)
+        self.__board       = board
+        self.__boardsprite = BoardSprite(board, pixel_width, pixel_height)
+        self.add(self.__boardsprite)
+        self.__board_width  = pixel_width
+        self.__board_height = pixel_height
+        self.__cell_width   = pixel_width  // self.__board.width
+        self.__cell_height  = pixel_height // self.__board.height
+
+    @property
+    def cell_width(self):
+        return self.__cell_width
+
+    @property
+    def cell_height(self):
+        return self.__cell_height
+
+    def update(self, operation, mouse_x, mouse_y):
+        x = mouse_x // self.__cell_width
+        y = mouse_y // self.__cell_height
+        print( "BoardGroup", x, y)
+        cell = self.__board.open(x, y)
+
 
 class MineSweeperGame(Game):
     """MineSweeperGameクラス"""
@@ -493,8 +498,8 @@ class MineSweeperGame(Game):
                 self.surface.fill((0,0,0))
 
                 self.board      = Board(config.board_width, config.board_height, config.mine_count)
-                self.boardgroup = BoardGroup(self.board)
-                self.cellgroup  = CellGroup(self.board.cells, config.screen_width  // self.board.width, config.screen_height // self.board.height)
+                self.boardgroup = BoardGroup(self.board, config.screen_width, config.screen_height)
+                self.cellgroup  = CellGroup(self.board.cells, self.boardgroup.cell_width, self.boardgroup.cell_height)
 
 
                 break
@@ -519,8 +524,8 @@ class MineSweeperGame(Game):
         if update_flag == True and self.scene == MineSweeperGame.SCENE_GAME:
             # オブジェクト更新
             print("aaa", mouse_x, mouse_y)
-            self.boardgroup.update(mouse_x, mouse_y)
-            self.cellgroup.update(mouse_x, mouse_y)
+            self.boardgroup.update(1, mouse_x, mouse_y)
+            self.cellgroup.update()
 
             # 前回描画分をサーフェイスからクリア
 
