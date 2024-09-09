@@ -24,14 +24,14 @@ class MineSweeperGame
     - clear_surf
 }
 
-class BoardGroup
+class PlainGroup
 {
     + init(盤面, サイズ[pixel])
     + update()
     + draw()
 }
 
-class BoardSprite
+class PlainSprite
 {
     + 位置
     + イメージ
@@ -39,38 +39,38 @@ class BoardSprite
     + update()
 }
 
-class Board
+class Plain
 {
     + width
     + height
-    + cells[]
+    + districts[]
     + init(盤面サイズ)
     + open(マス目位置)
     + mark(マス目位置)
 }
 
-class CellGroup
+class DistrictGroup
 {
     + init(セル[], サイズ[pixel])
     + update()
     + draw()
 }
 
-class CellSprite
+class DistrictSprite
 {
     + 位置
     + イメージ
     + init(セル, サイズ[pixel])
     + update()
 }
-class Cell
+class District
 {
     + neighbors[]
     + mine_type
     + open_state
     + mark_state
     + init()
-    + set_neighbor(pos, cell)
+    + set_neighbor(pos, district)
     + set_mine()
     + open()
     + mark()
@@ -79,28 +79,28 @@ class Cell
 }
 
 Game <|- MineSweeperGame
-MineSweeperGame  "1" *-- "1" Board
-MineSweeperGame  "1" *-- "1" BoardGroup   : upadte(クリック位置),draw()
-MineSweeperGame  "1" *-- "1" CellGroup    : upadte(),draw()
+MineSweeperGame  "1" *-- "1" Plain
+MineSweeperGame  "1" *-- "1" PlainGroup   : upadte(クリック位置),draw()
+MineSweeperGame  "1" *-- "1" DistrictGroup    : upadte(),draw()
 
-Board            "1" *-   "*" Cell
+Plain            "1" *-   "*" District
 
-Board                <--      BoardGroup  : 参照(初期化),各種操作
-Board                <--      BoardSprite : 参照(描画)
-BoardGroup       "1" *-  "1"  BoardSprite
+Plain                <--      PlainGroup  : 参照(初期化),各種操作
+Plain                <--      PlainSprite : 参照(描画)
+PlainGroup       "1" *-  "1"  PlainSprite
 
-Cell                 <---     CellGroup   : 参照(初期化)
-Cell                 <---     CellSprite  : 参照(描画)
-CellGroup        "1" *-   "*" CellSprite
-BoardGroup           <--      CellGroup   : 参照(セルサイズ[pixel])
+District                 <---     DistrictGroup   : 参照(初期化)
+District                 <---     DistrictSprite  : 参照(描画)
+DistrictGroup        "1" *-   "*" DistrictSprite
+PlainGroup           <--      DistrictGroup   : 参照(セルサイズ[pixel])
 
 
 class Config
 {
     + screen_width
     + screen_height
-    + board_width
-    + board_height
+    + plain_width
+    + plain_height
 }
 
 @enduml
@@ -112,16 +112,16 @@ class Config
         スクリーン幅 [ピクセル]
     - screen_height
         スクリーン高 [ピクセル]
-    - board_width
+    - plain_width
         ボード幅 [セル]
-    - board_height
+    - plain_height
         ボード高 [セル]
 
 ---
-- class Board
+- class Plain
     - size
         盤面サイズ
-    - cells[][]
+    - districts[][]
         セルを保持する2次元配列（2行2列余分に確保）
     - init(盤面サイズ)
         以下を実施。
@@ -134,7 +134,7 @@ class Config
         盤面操作（マーキングする）
 
 ---
-- class Cell
+- class District
     - type
         地雷を設置、確認
         - TYPE_MINE : 地雷
