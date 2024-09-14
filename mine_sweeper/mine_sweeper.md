@@ -41,8 +41,8 @@ class PlainSprite
 
 class Plain
 {
-    + width
-    + height
+    + rows
+    + columns
     + districts[]
     + init(盤面サイズ)
     + open(マス目位置)

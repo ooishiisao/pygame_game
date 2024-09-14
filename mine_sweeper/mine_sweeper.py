@@ -95,18 +95,70 @@ class District():
                 count += 1
         return count
 
+class Plain():
+
+    def __init__(self, width, height, mine_count):
+        super().__init__()
+        self.districts = []
+        self.__columns     = width
+        self.__rows     = height 
+        self.__mine_count = mine_count
+
+        #Districtオブジェクト作成
+        for y, x in product(range(self.__columns), range(self.__rows)):
+            district = District(x, y)
+            self.districts.append(district)
+
+        #周辺のDistrictとのリンク
+        for y, x in product(range(self.__columns), range(self.__rows)):
+            pos = 0
+            district : District = self.districts[y*self.__columns + x]
+            for xx, yy in product((x-1, x, x+1), (y-1, y, y+1)):
+                if(xx >= 0 and xx < self.__columns and yy >= 0 and yy < self.__rows):
+                    neighbor = self.districts[yy*self.__columns + xx]
+                    district.set_neighbor(pos, neighbor)
+                pos+=1
+
+        #地雷設置
+        count = 0
+        while count < self.__mine_count :
+            val = randint(0, self.__columns * self.__rows - 1)
+            x = val % self.__columns
+            y = val // self.__rows
+            if self.districts[y*self.__columns + x].mine_type == District.TYPE_NONE:
+                print("[DEBUG]MINE_SET:", x, y)
+                count += 1
+
+    @property
+    def columns(self):
+        return self.__columns
+
+    @property
+    def rows(self):
+        return self.__rows
+
+    @property
+    def mine_count(self):
+        return self.__mine_count
+
+    def open(self, x, y):
+        ret = self.districts[self.__columns * y + x].open()
+        return ret
+
+    def mark(self, x, y):
+        self.districts[self.__columns * y + y].mark()
+
+
 class DistrictSprite(pygame.sprite.Sprite):
 
-    def __init__(self, district, image_width, image_height):
+    def __init__(self, district, area):
         super().__init__()
         self.__district = district
-        left   = image_width  * district.x
-        top    = image_height * district.y
-        right  = image_width - 5
-        bottom = image_height - 5
-        self.rect = Rect(left, top, right, bottom)
+        area.width  -= 5
+        area.height -= 5
+        self.rect = area
         print(self.rect)
-        self.image = pygame.Surface((image_width - 5, image_height - 5))
+        self.image = pygame.Surface((area.width, area.height))
         self.image.fill((128,128,128))
 
     def update(self):
@@ -115,67 +167,16 @@ class DistrictSprite(pygame.sprite.Sprite):
         else:
             self.image.fill((128,128,0))
 
+
 class DistrictGroup(pygame.sprite.Group):
 
-    def __init__(self, districts, image_width, image_height):
+    def __init__(self, districts, columns, rows, area):
         super().__init__()
-        self.__image_width  = image_width
-        self.__image_height = image_height
+        width  = area.width  // columns
+        height = area.height // rows
         for district in districts:
-            self.add(DistrictSprite(district, image_width, image_height))
+            self.add(DistrictSprite(district, Rect(width * district.x, height * district.y, width, height)))
 
-class Plain():
-
-    def __init__(self, width, height, mine_count):
-        super().__init__()
-        self.districts = []
-        self.__width      = width
-        self.__height     = height 
-        self.__mine_count = mine_count
-
-        #Districtオブジェクト作成
-        for y, x in product(range(self.__width), range(self.__height)):
-            district = District(x, y)
-            self.districts.append(district)
-
-        #周辺のDistrictとのリンク
-        for y, x in product(range(self.__width), range(self.__height)):
-            pos = 0
-            district : District = self.districts[y*self.__width + x]
-            for xx, yy in product((x-1, x, x+1), (y-1, y, y+1)):
-                if(xx >= 0 and xx < self.__width and yy >= 0 and yy < self.__height):
-                    neighbor = self.districts[yy*self.__width + xx]
-                    district.set_neighbor(pos, neighbor)
-                pos+=1
-
-        #地雷設置
-        count = 0
-        while count < self.__mine_count :
-            val = randint(0, self.__width * self.__height - 1)
-            x = val % self.__width
-            y = val // self.__height
-            if self.districts[y*self.__width + x].mine_type == District.TYPE_NONE:
-                print("[DEBUG]MINE_SET:", x, y)
-                count += 1
-
-    @property
-    def width(self):
-        return self.__width
-
-    @property
-    def height(self):
-        return self.__height
-
-    @property
-    def mine_count(self):
-        return self.__mine_count
-
-    def open(self, x, y):
-        ret = self.districts[self.__width * y + x].open()
-        return ret
-
-    def mark(self, x, y):
-        self.districts[self.__width * y + y].mark()
 
 class PlainSprite(pygame.sprite.Sprite):
 
@@ -184,6 +185,12 @@ class PlainSprite(pygame.sprite.Sprite):
         self.rect = Rect(0, 0, pixel_width, pixel_height)
         self.image = pygame.Surface((pixel_width, pixel_height))
         self.image.fill((128,0,0))
+        self.__plain_area = Rect(0, 0, pixel_width, pixel_height)
+
+    @property
+    def plain_area(self):
+        return self.__plain_area
+
 
 class PlainGroup(pygame.sprite.Group):
 
@@ -192,24 +199,18 @@ class PlainGroup(pygame.sprite.Group):
         self.__plain       = plain
         self.__plainsprite = PlainSprite(plain, pixel_width, pixel_height)
         self.add(self.__plainsprite)
-        self.__plain_width  = pixel_width
-        self.__plain_height = pixel_height
-        self.__district_width   = pixel_width  // self.__plain.width
-        self.__district_height  = pixel_height // self.__plain.height
+        self.__plain_area = self.__plainsprite.plain_area        
+        self.__district_width  = self.__plain_area.width  // self.__plain.columns
+        self.__district_height = self.__plain_area.height // self.__plain.rows
 
     @property
-    def district_width(self):
-        return self.__district_width
-
-    @property
-    def district_height(self):
-        return self.__district_height
+    def plain_area(self):
+        return self.__plain_area
 
     def update(self, operation, mouse_x, mouse_y):
-        x = mouse_x // self.__district_width
-        y = mouse_y // self.__district_height
-        print( "PlainGroup", x, y)
-        district = self.__plain.open(x, y)
+        x = (mouse_x - self.__plain_area.left) // self.__district_width
+        y = (mouse_y - self.__plain_area.top)  // self.__district_height
+        self.__plain.open(x, y)
 
 
 class MineSweeperGame(Game):
@@ -260,7 +261,7 @@ class MineSweeperGame(Game):
 
                 self.plain      = Plain(config.plain_width, config.plain_height, config.mine_count)
                 self.plaingroup = PlainGroup(self.plain, config.screen_width, config.screen_height)
-                self.districtgroup  = DistrictGroup(self.plain.districts, self.plaingroup.district_width, self.plaingroup.district_height)
+                self.districtgroup  = DistrictGroup(self.plain.districts, self.plain.columns, self.plain.rows, self.plaingroup.plain_area)
 
 
                 break
