@@ -8,8 +8,8 @@ from game import Game
 class Config:
     screen_width  = 0
     screen_height = 0
-    plain_width   = 0
-    plain_height  = 0
+    rows          = 0
+    columns       = 0
     mine_count    = 0
 
 class District():
@@ -36,7 +36,6 @@ class District():
         self.__open_state = District.STATE_CLOSED
         self.__mark_state = District.STATE_NOMARK
         self.__neighbors = [None, None, None, None, None, None, None, None]
-        self.debug = 0
 
     @property
     def x(self):
@@ -60,13 +59,13 @@ class District():
 
     def set_neighbor(self, pos, district):
         """隣のセルとのリンクを設定"""
-        if( pos >= District.POS_NW and pos <= District.POS_SE):
+        if pos >= District.POS_NW and pos <= District.POS_SE:
             self.__neighbors[pos] = district
 
     def set_mine(self):
         """地雷をセット"""
-        if(self.__mine_type == District.TYPE_NONE):
-            self.__type = District.TYPE_MINE
+        if self.__mine_type == District.TYPE_NONE:
+            self.__mine_type = District.TYPE_MINE
             return True
         else:
             return False
@@ -74,34 +73,45 @@ class District():
     def open(self):
         """セルを暴く"""
         self.__open_state = District.STATE_OPEN
-        if( self.__mine_type == District.TYPE_NONE ):
-            #周りのセルを開く
-            #TODO
-            pass
+        if self.__mine_type == District.TYPE_NONE:
+            print(f"open x:{self.x} y:{self.y}")
+            if self.get_around_mines() == 0:
+                #周りのセルを開く
+                for district in self.__neighbors:
+                    if district is None:
+                        continue
+                    if district.mine_type == District.TYPE_MINE:
+                        continue
+                    if district.open_state == District.STATE_OPEN:
+                        continue
+                    district.open()
         return self.__mine_type
 
     def mark(self):
         """セルをマーキングする"""
-        if( self.__mark_state == District.STATE_NOMARK ):
-            self.__mark_state == District.STATE_MARKED
+        print(f"mark x:{self.x} y:{self.y}")
+        if self.__mark_state == District.STATE_NOMARK:
+            self.__mark_state = District.STATE_MARKED
         else:
-            self.__mark_state == District.STATE_NOMARK
+            self.__mark_state = District.STATE_NOMARK
 
-    def get_mine_count(self):
+    def get_around_mines(self):
         """周りの地雷の数を返す"""
         count = 0
         for district in self.__neighbors:
-            if district is not None and district.mine_type == District.TYPE_MINE:
+            if district is None:
+                continue
+            if district.mine_type == District.TYPE_MINE:
                 count += 1
         return count
 
 class Plain():
 
-    def __init__(self, width, height, mine_count):
+    def __init__(self, rows, columns, mine_count):
         super().__init__()
         self.districts = []
-        self.__columns     = width
-        self.__rows     = height 
+        self.__rows    = rows
+        self.__columns = columns
         self.__mine_count = mine_count
 
         #Districtオブジェクト作成
@@ -114,9 +124,11 @@ class Plain():
             pos = 0
             district : District = self.districts[y*self.__columns + x]
             for xx, yy in product((x-1, x, x+1), (y-1, y, y+1)):
-                if(xx >= 0 and xx < self.__columns and yy >= 0 and yy < self.__rows):
-                    neighbor = self.districts[yy*self.__columns + xx]
-                    district.set_neighbor(pos, neighbor)
+                if  x == xx and y == yy:
+                    continue
+                if xx >= 0 and xx < self.__columns and yy >= 0 and yy < self.__rows:
+                        neighbor = self.districts[yy*self.__columns + xx]
+                        district.set_neighbor(pos, neighbor)
                 pos+=1
 
         #地雷設置
@@ -125,8 +137,7 @@ class Plain():
             val = randint(0, self.__columns * self.__rows - 1)
             x = val % self.__columns
             y = val // self.__rows
-            if self.districts[y*self.__columns + x].mine_type == District.TYPE_NONE:
-                print("[DEBUG]MINE_SET:", x, y)
+            if self.districts[y*self.__columns + x].set_mine():
                 count += 1
 
     @property
@@ -146,7 +157,7 @@ class Plain():
         return ret
 
     def mark(self, x, y):
-        self.districts[self.__columns * y + y].mark()
+        self.districts[self.__columns * y + x].mark()
 
 
 class DistrictSprite(pygame.sprite.Sprite):
@@ -157,20 +168,31 @@ class DistrictSprite(pygame.sprite.Sprite):
         area.width  -= 5
         area.height -= 5
         self.rect = area
-        print(self.rect)
+        #print(self.rect)
         self.image = pygame.Surface((area.width, area.height))
         self.image.fill((128,128,128))
+        self.__font = pygame.font.SysFont(None, 24)
 
     def update(self):
         if self.__district.open_state == District.STATE_OPEN:
-            self.image.fill((128,0,128))
+            count = self.__district.get_around_mines()
+            number_image = self.__font.render(f"{count}", True, (255,255,255))
+            number_rect = number_image.get_rect()
+            number_rect.center = self.image.get_rect().center
+            self.image.blit(number_image, number_rect)
         else:
-            self.image.fill((128,128,0))
+            if self.__district.mark_state == District.STATE_MARKED:
+                number_image = self.__font.render("?", True, (255,255,255))
+                number_rect = number_image.get_rect()
+                number_rect.center = self.image.get_rect().center
+                self.image.blit(number_image, number_rect)
+            else:
+                self.image.fill((128,128,128))
 
 
 class DistrictGroup(pygame.sprite.Group):
 
-    def __init__(self, districts, columns, rows, area):
+    def __init__(self, districts, rows, columns, area):
         super().__init__()
         width  = area.width  // columns
         height = area.height // rows
@@ -182,6 +204,7 @@ class PlainSprite(pygame.sprite.Sprite):
 
     def __init__(self, plain, pixel_width, pixel_height):
         super().__init__()
+        self.__plain = plain
         self.rect = Rect(0, 0, pixel_width, pixel_height)
         self.image = pygame.Surface((pixel_width, pixel_height))
         self.image.fill((128,0,0))
@@ -210,8 +233,10 @@ class PlainGroup(pygame.sprite.Group):
     def update(self, operation, mouse_x, mouse_y):
         x = (mouse_x - self.__plain_area.left) // self.__district_width
         y = (mouse_y - self.__plain_area.top)  // self.__district_height
-        self.__plain.open(x, y)
-
+        if operation == 1:
+            self.__plain.open(x, y)
+        elif operation == 3:
+            self.__plain.mark(x, y)
 
 class MineSweeperGame(Game):
     """MineSweeperGameクラス"""
@@ -259,11 +284,10 @@ class MineSweeperGame(Game):
                 scene_next = MineSweeperGame.SCENE_GAME
                 self.surface.fill((0,0,0))
 
-                self.plain      = Plain(config.plain_width, config.plain_height, config.mine_count)
+                self.plain      = Plain(config.rows, config.columns, config.mine_count)
                 self.plaingroup = PlainGroup(self.plain, config.screen_width, config.screen_height)
-                self.districtgroup  = DistrictGroup(self.plain.districts, self.plain.columns, self.plain.rows, self.plaingroup.plain_area)
-
-
+                self.districtgroup = DistrictGroup(self.plain.districts, self.plain.rows, self.plain.columns, self.plaingroup.plain_area)
+                self.districtgroup.update()
                 break
         return scene_next
 
@@ -281,12 +305,12 @@ class MineSweeperGame(Game):
         for event in pygame.event.get():
             if event.type == MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = event.pos
+                mouse_button     = event.button
                 update_flag = True
 
         if update_flag == True and self.scene == MineSweeperGame.SCENE_GAME:
             # オブジェクト更新
-            print("aaa", mouse_x, mouse_y)
-            self.plaingroup.update(1, mouse_x, mouse_y)
+            self.plaingroup.update(mouse_button, mouse_x, mouse_y)
             self.districtgroup.update()
 
             # 前回描画分をサーフェイスからクリア
@@ -299,11 +323,11 @@ class MineSweeperGame(Game):
 
 
 config = Config
-config.screen_width = 600
+config.screen_width  = 600
 config.screen_height = 600
-config.plain_width = 10 
-config.plain_height = 10
-config.mine_count = 2
+config.rows          = 20 
+config.columns       = 20
+config.mine_count    = 40
 
 def main():
     """メイン"""
