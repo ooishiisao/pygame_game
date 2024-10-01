@@ -13,29 +13,41 @@ class Game
     + surface
 
     + run()
-    # on_frame(シーン)
+    # on_frame()
 }
 
 class MineSweeperGame
 {
-    # on_frame(シーン)
-    - mouse_x
-    - mouse_y
-    - clear_surf
+    - scene
+    - plain
+    - plaingroup
+    - districtgroup
+
+    # on_frame()
+    # on_frame_title()
+    # on_frame_game()
 }
 
 class PlainGroup
 {
-    + init(盤面, サイズ[pixel])
+    + init(Plainオブジェクト, 表示エリア)
+    - _plain
+    - _plainsprite
+    - _districtgroup
+    - _districts_area
+    - _district_width
+    - _district_height
+
     + update()
     + draw()
 }
 
 class PlainSprite
 {
-    + 位置
-    + イメージ
-    + init(盤面, サイズ[pixel])
+    + area
+    + image
+    - _plain
+    + init(Plainオブジェクト, 表示エリア)
     + update()
 }
 
@@ -43,56 +55,61 @@ class Plain
 {
     + rows
     + columns
+    + mine_count
     + districts[]
-    + init(盤面サイズ)
+    + init(行数, 列数, 地雷数)
     + open(マス目位置)
     + mark(マス目位置)
 }
 
 class DistrictGroup
 {
-    + init(セル[], サイズ[pixel])
+    + init(Districtオブジェクト[], 行数, 列数, 表示エリア)
     + update()
     + draw()
 }
 
 class DistrictSprite
 {
-    + 位置
-    + イメージ
-    + init(セル, サイズ[pixel])
+    + area
+    + image
+    - _district
+    - _font
+    + init(Districtオブジェクト, 表示エリア)
     + update()
 }
 class District
 {
-    + neighbors[]
+    + x
+    + y
     + mine_type
     + open_state
     + mark_state
-    + init()
-    + set_neighbor(pos, district)
+    + neighbors[]
+
+    + init(x位置, y位置)
+    + set_neighbor(位置定数, Districtオブジェクト)
     + set_mine()
     + open()
     + mark()
-    + get_mine_count()
+    + get_around_mines()
     
 }
 
 Game <|- MineSweeperGame
 MineSweeperGame  "1" *-- "1" Plain
 MineSweeperGame  "1" *-- "1" PlainGroup   : upadte(クリック位置),draw()
-MineSweeperGame  "1" *-- "1" DistrictGroup    : upadte(),draw()
 
 Plain            "1" *-   "*" District
 
 Plain                <--      PlainGroup  : 参照(初期化),各種操作
 Plain                <--      PlainSprite : 参照(描画)
 PlainGroup       "1" *-  "1"  PlainSprite
+PlainGroup       "1" *-  "1"  DistrictGroup : update(), draw()
 
-District                 <---     DistrictGroup   : 参照(初期化)
-District                 <---     DistrictSprite  : 参照(描画)
-DistrictGroup        "1" *-   "*" DistrictSprite
-PlainGroup           <--      DistrictGroup   : 参照(セルサイズ[pixel])
+District             <---     DistrictGroup   : 参照(初期化)
+District             <---     DistrictSprite  : 参照(描画)
+DistrictGroup    "1" *-   "*" DistrictSprite
 
 
 class Config
@@ -123,7 +140,7 @@ class Config
         盤面サイズ
     - districts[][]
         セルを保持する2次元配列（2行2列余分に確保）
-    - init(盤面サイズ)
+    - init(盤面サイズ, 地雷数)
         以下を実施。
         - セルの生成
         - セル同士のリンクを張る。
