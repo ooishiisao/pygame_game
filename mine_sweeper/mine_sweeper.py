@@ -72,20 +72,24 @@ class District():
 
     def open(self):
         """セルを暴く"""
-        self._open_state = District.STATE_OPEN
-        if self._mine_type == District.TYPE_NONE:
-            print(f"open x:{self.x} y:{self.y}")
-            if self.get_around_mines() == 0:
-                #周りのセルを開く
-                for district in self._neighbors:
-                    if district is None:
-                        continue
-                    if district.mine_type == District.TYPE_MINE:
-                        continue
-                    if district.open_state == District.STATE_OPEN:
-                        continue
-                    district.open()
-        return self._mine_type
+        if self._mark_state == District.STATE_MARKED:
+            ret = District.TYPE_NONE
+        else:
+            self._open_state = District.STATE_OPEN
+            ret = self._mine_type
+            if self._mine_type == District.TYPE_NONE:
+                print(f"open x:{self.x} y:{self.y}")
+                if self.get_around_mines() == 0:
+                    #周りのセルを開く
+                    for district in self._neighbors:
+                        if district is None:
+                            continue
+                        if district.mine_type == District.TYPE_MINE:
+                            continue
+                        if district.open_state == District.STATE_OPEN:
+                            continue
+                        district.open()
+        return ret
 
     def mark(self):
         """セルをマーキングする"""
@@ -113,6 +117,7 @@ class Plain():
         self._rows    = rows
         self._columns = columns
         self._mine_count = mine_count
+        self._is_over = False
 
         #Districtオブジェクト作成
         for y, x in product(range(self._columns), range(self._rows)):
@@ -156,9 +161,12 @@ class Plain():
     def mine_count(self):
         return self._mine_count
 
+    @property
+    def is_over(self):
+        return self._is_over
+
     def open(self, x, y):
-        ret = self.districts[self._columns * y + x].open()
-        return ret
+        self._is_over = self.districts[self._columns * y + x].open()
 
     def mark(self, x, y):
         self.districts[self._columns * y + x].mark()
@@ -179,17 +187,23 @@ class DistrictSprite(pygame.sprite.Sprite):
 
     def update(self):
         if self._district.open_state == District.STATE_OPEN:
-            count = self._district.get_around_mines()
-            number_image = self._font.render(f"{count}", True, (255,255,255))
-            number_rect = number_image.get_rect()
-            number_rect.center = self.image.get_rect().center
-            self.image.blit(number_image, number_rect)
+            if self._district.mine_type == District.TYPE_NONE:
+                count = self._district.get_around_mines()
+                image = self._font.render(f"{count}", True, (255,255,255))
+                rect  = image.get_rect()
+                rect.center = self.image.get_rect().center
+                self.image.blit(image, rect)
+            else:
+                image = self._font.render("*", True, (0,0,0))
+                rect  = image.get_rect()
+                rect.center = self.image.get_rect().center
+                self.image.blit(image, rect)
         else:
             if self._district.mark_state == District.STATE_MARKED:
-                number_image = self._font.render("?", True, (255,255,255))
-                number_rect = number_image.get_rect()
-                number_rect.center = self.image.get_rect().center
-                self.image.blit(number_image, number_rect)
+                image = self._font.render("?", True, (0,0,0))
+                rect  = image.get_rect()
+                rect.center = self.image.get_rect().center
+                self.image.blit(image, rect)
             else:
                 self.image.fill((128,128,128))
 
@@ -253,80 +267,83 @@ class MineSweeperGame(Game):
         """初期化"""
         super().__init__(width, height)
         # 盤面（とセル）
-        self.scene = self.SCENE_TITLE
+        self._scene = self.SCENE_TITLE
 
     def on_frame(self):
         """フレーム処理
         Args:
             scene (int) : 0 タイトル / 1 ゲーム / 2 終了
-        Returns:
-            int : 0 タイトル / 1 ゲーム / 2 終了
         """
-        if self.scene == MineSweeperGame.SCENE_TITLE:
-            scene_next = self.on_frame_title()
+        if self._scene == MineSweeperGame.SCENE_TITLE:
+            self.on_frame_title()
+        elif self._scene == MineSweeperGame.SCENE_END:
+            self.on_frame_title()
         else:
-            scene_next = self.on_frame_game()
-        return scene_next
+            self.on_frame_game()
 
     def on_frame_title(self):
         """フレーム処理（タイトル）
-        Returns:
-            int : 0 タイトル / 1 ゲーム
         """
-        # タイトル
-        scene_next = MineSweeperGame.SCENE_TITLE
-        textsurf = self.font.render("MineSweeperGame", True,  (255,255,255))
-        self.surface.blit(textsurf, 
-                          ((self.window_width - textsurf.get_width()) / 2,
-                           (self.window_height - textsurf.get_height()) / 2))
-
         # イベント処理
+        action_flag = False
         for event in pygame.event.get():
             if event.type == KEYDOWN or event.type == MOUSEBUTTONDOWN:
-                scene_next = MineSweeperGame.SCENE_GAME
-                self.surface.fill((0,0,0))
+                action_flag = True
+                break
 
+        # タイトル
+        if self._scene == MineSweeperGame.SCENE_TITLE:
+            self.surface.fill((0,0,0))
+            textsurf         = self.font.render("MineSweeperGame", True, (255,255,255))
+            if action_flag == True:
+                self._scene  = MineSweeperGame.SCENE_GAME
                 self._plain      = Plain(config.rows, config.columns, config.mine_count)
                 area = Rect(0, 0, config.screen_width, config.screen_height)
                 self._plaingroup = PlainGroup(self._plain, area)
-                break
-        return scene_next
+        else:
+            textsurf = self.font.render("GAME OVER", True, (0,0,0))
+            if action_flag == True:
+                self._scene  = MineSweeperGame.SCENE_TITLE
+
+        self.surface.blit( textsurf, 
+                           ((self.window_width - textsurf.get_width()) / 2,
+                            (self.window_height - textsurf.get_height()) / 2))
 
     def on_frame_game(self):
         """フレーム処理（ゲーム）
         Returns:
             int : 1 ゲーム / 2 終了
         """
-        # 次のシーン
-        scene_next = MineSweeperGame.SCENE_GAME
+
         # イベント処理
         mouse_x = 0
         mouse_y = 0
-        update_flag = False
+        action_flag = False
         for event in pygame.event.get():
             if event.type == MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = event.pos
                 mouse_button     = event.button
-                update_flag      = True
+                action_flag      = True
+                break
 
-        if update_flag == True and self.scene == MineSweeperGame.SCENE_GAME:
+        if action_flag == True:
             # オブジェクト更新
             self._plaingroup.update(mouse_button, mouse_x, mouse_y)
-
-            # 前回描画分をサーフェイスからクリア
 
         # 今回描画分をサーフェイスに描画
         self._plaingroup.draw(self.surface)
 
-        return scene_next
+        if self._plain.is_over == True:
+            self._scene = MineSweeperGame.SCENE_END
+
 
 
 config = Config
 config.screen_width  = 600
 config.screen_height = 600
-config.rows          = 20 
-config.columns       = 20
-config.mine_count    = 40
+config.rows          = 16 
+config.columns       = 16
+config.mine_count    = 20
 
 def main():
     """メイン"""

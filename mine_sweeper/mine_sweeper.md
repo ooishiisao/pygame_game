@@ -18,10 +18,10 @@ class Game
 
 class MineSweeperGame
 {
-    - scene
-    - plain
-    - plaingroup
-    - districtgroup
+    - _scene
+    - _plain
+    - _plaingroup
+    - _districtgroup
 
     # on_frame()
     # on_frame_title()
