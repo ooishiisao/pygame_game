@@ -23,55 +23,55 @@ class Maze():
     DOWN  = 3
     NONE  = 4
 
-    def __init__(self, x, y):
+    def __init__(self, width : int, height : int):
         super().__init__()
         # 最低5以上の奇数
-        if x % 2 == 0:
-            x += 1
-        if x < 5:
-            x = 5
-        if y % 2 == 0:
-            y += 1
-        if y < 5:
-            y = 5
-        self.x = x
-        self.y = y
-        self.maze = [[0 for i in range(y)] for j in range(x)]
+        if width % 2 == 0:
+            width += 1
+        if width < 5:
+            width = 5
+        if height % 2 == 0:
+            height += 1
+        if height < 5:
+            height = 5
+        self.width = width
+        self.height = height
+        self.map = [[0 for i in range(height)] for j in range(width)]
         self._step    = 0
         self._steps   = []
         self._substep = 0
         self.clear()
 
     def clear(self):
-        for x, y in product(range(self.x), range(self.y)):
-            if x == 0 or x == self.x-1 or y == 0 or y == self.y-1:
-                self.maze[x][y] = Maze.BLOCK
+        for x, y in product(range(self.width), range(self.height)):
+            if x == 0 or x == self.width-1 or y == 0 or y == self.height-1:
+                self.map[x][y] = Maze.BLOCK
             #elif x % 2 == 0 and y % 2 == 0:
-            #    self.maze[x][y] = Maze.BLOCK
+            #    self.map[x][y] = Maze.BLOCK
             else:
-                self.maze[x][y] = Maze.FLOOR
+                self.map[x][y] = Maze.FLOOR
 
-    def make_by_lay_pole(self):
-        self.prepare_by_lay_pole()
-        while self.next_by_lay_pole():
+    def make_method1(self):
+        self.prepare_method1()
+        while self.next_method1():
             pass
 
-    def prepare_by_lay_pole(self):
+    def prepare_method1(self):
         self.clear()
         self._step    = 0
         self._steps   = []
         self._substep = 0
-        for y, x in product(range(self.y), range(self.x)):
-            if x > 0 and x < self.x-1 and x % 2 == 0 \
-               and y > 0 and y < self.y-1 and y % 2 == 0:
+        for y, x in product(range(self.height), range(self.width)):
+            if x > 0 and x < self.width-1 and x % 2 == 0 \
+               and y > 0 and y < self.height-1 and y % 2 == 0:
                 self._steps.append((x, y))
 
-    def next_by_lay_pole(self):
+    def next_method1(self) -> bool:
         if self._step < len(self._steps):
             x, y = self._steps[self._step]
             self._substep += 1
             if self._substep == 1:
-                self.maze[x][y] = Maze.BLOCK
+                self.map[x][y] = Maze.BLOCK
             elif self._substep == 2:
                 while True:
                     if y == 2:
@@ -94,53 +94,117 @@ class Maze():
                         chk_y = y
                     else:
                         break
-                    if self.maze[chk_x][chk_y] == Maze.FLOOR:
-                        self.maze[chk_x][chk_y] = Maze.BLOCK
+                    if self.map[chk_x][chk_y] == Maze.FLOOR:
+                        self.map[chk_x][chk_y] = Maze.BLOCK
                         break
             elif self._substep == 3:
-                self.maze[x][y] = Maze.BLOCK
+                self.map[x][y] = Maze.BLOCK
                 self._step += 1
                 self._substep = 0
             return True
         else:
             return False
 
+class MazeGroup(pygame.sprite.Group):
+
+    def __init__(self, maze : Maze):
+        super().__init__()
+        self._maze = maze
+
+    def update(self):
+        self._maze.next_method1()
+        super().update()
 
 class MazeSprite(pygame.sprite.Sprite):
 
-    def __init__(self, maze, width, height):
+    def __init__(self, maze : Maze, x : int, y : int, rect : pygame.Rect):
         super().__init__()
         self._maze = maze
-        self._maze_width  = width
-        self._maze_height = height
-        self.rect = (0, 0, width, height)
-        self.image = pygame.Surface((width, height))
-        self.image.fill((0,0,0))
-
-    def updatex(self):
-        for x, y in product(range(self._maze.x), range(self._maze.y)):
-            if self._maze.maze[x][y] == Maze.BLOCK:
-                color = (0,0,0)
-            elif self._maze.maze[x][y] == Maze.CURRENT:
-                color = (255,0,0)
-            else:
-                color = (255,255,255)
-            self.image.fill(color, (x*self._cell_width, y*self._cell_height, self._cell_width, self._cell_height))
+        self._maze_x = x * 2 + 1
+        self._maze_y = y * 2 + 1
+        self.rect = rect
+        self.image = pygame.Surface((rect.width, rect.height))
 
     def update(self):
-        for x, y in product(range(self._maze.x), range(self._maze.y)):
-            if self._maze.maze[x][y] == Maze.BLOCK:
-                color = (0,0,0)
-            elif self._maze.maze[x][y] == Maze.CURRENT:
-                color = (255,0,0)
-            else:
-                color = (255,255,255)
+        self.image.fill((255,255,255))
+        x = self._maze_x
+        y = self._maze_y
+        width  = self.rect.width - 0
+        height = self.rect.height - 0
+        thick_x = width  // 16
+        thick_y = height // 16
+        self.image.fill((0,0,0), (0,             0,              thick_x, thick_y))
+        self.image.fill((0,0,0), (width-thick_x, 0,              thick_x, thick_y))
+        self.image.fill((0,0,0), (0,             height-thick_y, thick_x, thick_y))
+        self.image.fill((0,0,0), (width-thick_x, height-thick_y, thick_x, thick_y))
+        if self._maze.map[x][y-1] == Maze.BLOCK:
+            self.image.fill((0,0,0), (0, 0, width, thick_y))
+        if self._maze.map[x-1][y] == Maze.BLOCK:
+            self.image.fill((0,0,0), (0, 0, thick_x, height))
+        if self._maze.map[x+1][y] == Maze.BLOCK:
+            self.image.fill((0,0,0), (width-thick_x, 0, thick_x, height))
+        if self._maze.map[x][y+1] == Maze.BLOCK:
+            self.image.fill((0,0,0), (0, height-thick_y, width, thick_y))
 
-            left   = self._maze_width  *  (x + x // 2) // (self._maze.x + self._maze.x // 2)
-            width  = self._maze_width  + (self._maze.x + (self._maze.x // 2)-1) // (self._maze.x + (self._maze.x // 2))
-            top    = self._maze_height *  (y + y // 2) // (self._maze.y + self._maze.y // 2)
-            height = self._maze_height + (self._maze.y + (self._maze.y // 2)-1) // (self._maze.y + (self._maze.y // 2))
-            self.image.fill(color, (left, top, width, height))
+class MazeNode():
+    UNDETERMINED = 0
+    DETERMINED   = 1
+
+    def __init__(self, x : int, y : int):
+        self.x             = x
+        self.y             = y
+        self.link_to_up    = None
+        self.link_to_left  = None
+        self.link_to_right = None
+        self.link_to_down  = None
+        self.distance      = 0xFFFFFFFF
+        self.state         = MazeNode.UNDETERMINED
+
+class MazeLink():
+    UNDETERMINED = 0
+    DETERMINED   = 1
+
+    def __init__(self, x : int, y : int):
+        self.x : int = x
+        self.y : int = y
+        self.weight : int = 1
+        self.end1 : MazeNode = None
+        self.end2 : MazeNode = None
+
+class MazeSearch():
+
+    def __init__(self, maze : Maze):
+        self._maze : Maze = maze
+        self._nodes : list[MazeNode] = []
+        for x, y in product(range(maze.x), range(maze.y)):
+            if x % 2 == 1 and y % 2 == 1:
+                self._nodes.append(MazeNode(x, y))
+
+        for node in self._nodes:
+            x = node.x
+            y = node.y
+            # UP
+            if self._maze.map[x][y-1] == Maze.FLOOR:
+                self.link_to_up = self.find_node(x, y-2)
+            # LEFT
+            if self._maze.map[x-1][y] == Maze.FLOOR:
+                self.link_to_up = self.find_node(x-2, y)
+            # RIGHT
+            if self._maze.map[x+1][y] == Maze.FLOOR:
+                self.link_to_up = self.find_node(x+2, y)
+            # DOWN
+            if self._maze.map[x][y+1] == Maze.FLOOR:
+                self.link_to_up = self.find_node(x, y+2)
+
+    def find_node(self, x : int, y : int):
+        ret = None
+        for node in self._nodes:
+            if node.x == x and node.y == y:
+                ret = node
+                break
+        return ret
+
+
 
 class MazeGame(Game):
     """MazeGameクラス"""
@@ -154,20 +218,29 @@ class MazeGame(Game):
         super().__init__(width, height)
 
         self.FPS    = 30
-        self._scene = self.SCENE_TITLE
-        self._maze   = Maze(21, 21)
-        self._maze.prepare_by_lay_pole()
-        #self._maze.make_by_lay_pole()
+        size_x      = 20
+        size_y      = 20
+        self._maze  = Maze(size_x*2+1, size_y*2+1)
+        self._maze.prepare_method1()
+        #self._maze.make_method1()
         
-        self._sprite = MazeSprite(self._maze, width, height)
-        self._group  = pygame.sprite.Group(self._sprite)
+        self._group = MazeGroup(self._maze)
+        for x in range(size_x):
+            for y in range(size_y):
+                block_size_x = width  // size_x
+                block_size_y = height // size_y
+                block_pos_x  = block_size_x * x
+                block_pos_y  = block_size_y * y
+                rect = pygame.Rect(block_pos_x, block_pos_y, block_size_x, block_size_y)
+                sprite = MazeSprite(self._maze, x, y, rect)
+                self._group.add(sprite)
 
     def on_frame(self):
         """フレーム処理
         Args:
             scene (int) : 0 タイトル / 1 ゲーム / 2 終了
         """
-        self._maze.next_by_lay_pole()    
+        self._maze.next_method1()    
 
         # イベント処理
         mouse_x = 0
