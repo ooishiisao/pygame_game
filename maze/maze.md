@@ -19,6 +19,8 @@ class Game
 
 class MazeGame
 {
+    + _size_x
+    + _size_y
     # on_frame()
     # on_frame_title()
     # on_frame_game()
@@ -42,9 +44,10 @@ class Maze
 class MazeGroup
 {
     - maze
-    + init(maze)
+    + init(maze,width, height)
     + update()
     + draw()
+    + is_complete()
 }
 
 class MazeSprite
@@ -56,19 +59,54 @@ class MazeSprite
     - maze_y
     + init(maze, x, y, rect)
     + update()
-
-
 }
 
+class MazeGraph
+{
+    - maze
+    - size_x
+    - size_y
+    + nodes[]
+
+    + init(x, y)
+    - find_node(x, y)
+}
+
+class MazeNode
+{
+    + x
+    + y
+    + link[4]
+    + init(x, y)
+    + set_link(dir, node)
+}
+
+class MazeLink
+{
+    + first
+    + second
+    + init()
+}
+
+
 Game <|- MazeGame
-MazeGame   "1"  *-- "1" Maze
-MazeGame   "1"  *-- "1" MazeGroup   : upadte(),draw()
-MazeGame   "1"  *-- "*" MazeSprite
+MazeGame    "1"  *-   "1" Maze
+MazeGame    "1"  *--  "1" MazeGroup   : upadte(),draw()
+MazeGame    "1"  *--  "1" GraphGroup
+MazeGame    "1"  *--  "1" MazeGraph
 
-MazeGroup  "1"  --> "1" Maze        : map,prepare(),next()
-MazeGroup  "1"  --  "*" MazeSprite  : upadte(),draw()
-MazeSprite "*"  ->  "1" Maze        : map
+MazeGroup   "1"  ->   "1" Maze        : map,prepare(),next()
+MazeGroup   "1"  *--  "*" MazeSprite : upadte(),draw()
+Maze        "*"  <--  "1" MazeSprite : map
 
+Maze        "1"  -    "1" MazeGraph
+MazeGraph   "1"  *--  "*" MazeNode
+MazeGraph   "1"  *--- "*" MazeLink
+
+GraphGroup  "1"  *--  "1" NodeSprite
+GraphGroup  "1"  *--- "1" LinkSprite
+MazeNode    "1"  -    "1" NodeSprite 
+MazeLink    "1"  -    "1" LinkSprite 
 
 @enduml
 ```
