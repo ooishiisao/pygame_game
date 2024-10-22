@@ -78,14 +78,12 @@ class MazeNode
     + y
     + link[4]
     + init(x, y)
-    + set_link(dir, node)
 }
 
 class MazeLink
 {
-    + first
-    + second
-    + init()
+    + link[4]
+    + init(node1,dir1,node2,dir2)
 }
 
 
