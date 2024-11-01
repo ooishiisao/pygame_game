@@ -28,8 +28,8 @@ class MazeGame
 
 class Maze
 {
-    + width
-    + hight
+    + maze_size_x
+    + maze_size_y
     + map[][]
     - step
     - steps
@@ -44,7 +44,8 @@ class Maze
 class MazeGroup
 {
     - maze
-    + init(maze,width, height)
+    + init(maze,size_x,size_y,
+            size_px_x,size_px_y)
     + update()
     + draw()
     + is_complete()
@@ -52,12 +53,14 @@ class MazeGroup
 
 class MazeSprite
 {
+    + rect
+    + image
     + pos_x
     + pos_y
     - maze
-    - maze_x
-    - maze_y
-    + init(maze, x, y, rect)
+    - maze_pos_x
+    - maze_pos_y
+    + init(maze,pos_x,pos_y,rect)
     + update()
 }
 
@@ -74,10 +77,12 @@ class MazeGraph
 
 class MazeNode
 {
-    + x
-    + y
+    + pos_x
+    + pos_y
     + link[4]
-    + init(x, y)
+    + distance
+    + state
+    + init(pos_x, pos_y)
 }
 
 class MazeLink
@@ -86,27 +91,58 @@ class MazeLink
     + init(node1,dir1,node2,dir2)
 }
 
+class GraphGroup
+{
+    - graph
+    + init(graph,size_x,size_y,
+            size_px_x,size_px_y)
+}
+
+class NodeSprite
+{
+    - node
+    + rect
+    + image
+    + init(node,rect)
+    + update()
+}
+
+class LinkSprite
+{
+    - link
+    + rect
+    + image
+    + init(link,rect)
+    + update()
+}
+
 
 Game <|- MazeGame
 MazeGame    "1"  *-   "1" Maze
-MazeGame    "1"  *--  "1" MazeGroup   : upadte(),draw()
-MazeGame    "1"  *--  "1" GraphGroup
+MazeGame    "1"  *--  "1" MazeGroup   : 描画
 MazeGame    "1"  *--  "1" MazeGraph
+MazeGame    "1"  *--  "1" GraphGroup  : 描画
 
-MazeGroup   "1"  ->   "1" Maze        : map,prepare(),next()
-MazeGroup   "1"  *--  "*" MazeSprite : upadte(),draw()
-Maze        "*"  <--  "1" MazeSprite : map
+MazeGroup   "1"  ->   "1" Maze        : 更新
+MazeGroup   "1"  *--  "*" MazeSprite  : 描画
+Maze        "*"  <--  "1" MazeSprite  : 参照
 
-Maze        "1"  -    "1" MazeGraph
-MazeGraph   "1"  *--  "*" MazeNode
-MazeGraph   "1"  *--- "*" MazeLink
+Maze        "1"  <-   "1" MazeGraph   : 参照
+MazeGraph   "1"  <-   "1" GraphGroup  : 更新
+MazeGraph   "1"  *--  "*" MazeNode    : 更新
+MazeGraph   "1"  *--- "*" MazeLink    : 更新
 
-GraphGroup  "1"  *--  "1" NodeSprite
-GraphGroup  "1"  *--- "1" LinkSprite
-MazeNode    "1"  -    "1" NodeSprite 
-MazeLink    "1"  -    "1" LinkSprite 
+GraphGroup  "1"  *--  "1" NodeSprite  : 描画
+GraphGroup  "1"  *--- "1" LinkSprite  : 描画
+MazeNode    "1"  <-    "1" NodeSprite : 参照
+MazeLink    "1"  <-    "1" LinkSprite : 参照
 
+note as a
+・描画 : upadte(),draw()
+・更新 : prepare(),next()
+end note
 @enduml
+
 ```
 
----
+
