@@ -11,9 +11,9 @@ class Config:
     x             = 0
     y             = 0
 
-class Maze():
+class MazeMap():
     FLOOR   = 0
-    BLOCK   = 1
+    WALL   = 1
     CURRENT = 2
     NEW     = 3
 
@@ -45,11 +45,11 @@ class Maze():
     def clear(self):
         for x, y in product(range(self.maze_size_x), range(self.maze_size_y)):
             if x == 0 or x == self.maze_size_x-1 or y == 0 or y == self.maze_size_y-1:
-                self.map[x][y] = Maze.BLOCK
+                self.map[x][y] = MazeMap.WALL
             #elif x % 2 == 0 and y % 2 == 0:
-            #    self.map[x][y] = Maze.BLOCK
+            #    self.map[x][y] = MazeMap.WALL
             else:
-                self.map[x][y] = Maze.FLOOR
+                self.map[x][y] = MazeMap.FLOOR
 
     def make_method1(self):
         self.prepare_method1()
@@ -71,34 +71,34 @@ class Maze():
             x, y = self._steps[self._step]
             self._substep += 1
             if self._substep == 1:
-                self.map[x][y] = Maze.BLOCK
+                self.map[x][y] = MazeMap.WALL
             elif self._substep == 2:
                 while True:
                     if y == 2:
-                        dir = randint(Maze.UP, Maze.DOWN)
-                        #dir = randint(Maze.UP, Maze.NONE)
+                        dir = randint(MazeMap.UP, MazeMap.DOWN)
+                        #dir = randint(MazeMap.UP, MazeMap.NONE)
                     else:
-                        dir = randint(Maze.LEFT, Maze.DOWN)
-                        #dir = randint(Maze.LEFT, Maze.NONE)
-                    if dir == Maze.UP:
+                        dir = randint(MazeMap.LEFT, MazeMap.DOWN)
+                        #dir = randint(MazeMap.LEFT, MazeMap.NONE)
+                    if dir == MazeMap.UP:
                         chk_x = x
                         chk_y = y-1
-                    elif dir == Maze.DOWN:
+                    elif dir == MazeMap.DOWN:
                         chk_x = x
                         chk_y = y+1
-                    elif dir == Maze.LEFT:
+                    elif dir == MazeMap.LEFT:
                         chk_x = x-1
                         chk_y = y
-                    elif dir == Maze.RIGHT:
+                    elif dir == MazeMap.RIGHT:
                         chk_x = x+1
                         chk_y = y
                     else:
                         break
-                    if self.map[chk_x][chk_y] == Maze.FLOOR:
-                        self.map[chk_x][chk_y] = Maze.BLOCK
+                    if self.map[chk_x][chk_y] == MazeMap.FLOOR:
+                        self.map[chk_x][chk_y] = MazeMap.WALL
                         break
             elif self._substep == 3:
-                self.map[x][y] = Maze.BLOCK
+                self.map[x][y] = MazeMap.WALL
                 self._step += 1
                 self._substep = 0
             return True
@@ -107,7 +107,7 @@ class Maze():
 
 class MazeGroup(pygame.sprite.Group):
 
-    def __init__(self, maze : Maze, size_x : int, size_y : int, size_px_x : int, size_px_y : int):
+    def __init__(self, maze : MazeMap, size_x : int, size_y : int, size_px_x : int, size_px_y : int):
         super().__init__()
         self._maze = maze
         self._maze.prepare_method1()
@@ -135,7 +135,7 @@ class MazeGroup(pygame.sprite.Group):
 
 class MazeSprite(pygame.sprite.Sprite):
 
-    def __init__(self, maze : Maze, x : int, y : int, rect : pygame.Rect):
+    def __init__(self, maze : MazeMap, x : int, y : int, rect : pygame.Rect):
         super().__init__()
         self._maze = maze
         self._maze_x = x * 2 + 1
@@ -155,22 +155,22 @@ class MazeSprite(pygame.sprite.Sprite):
         self.image.fill((0,0,0), (width-thick_x, 0,              thick_x, thick_y))
         self.image.fill((0,0,0), (0,             height-thick_y, thick_x, thick_y))
         self.image.fill((0,0,0), (width-thick_x, height-thick_y, thick_x, thick_y))
-        if self._maze.map[x][y-1] == Maze.BLOCK:
+        if self._maze.map[x][y-1] == MazeMap.WALL:
             self.image.fill((0,0,0), \
                 (thick_x,       0,              width-thick_x*2, thick_y         ))
-        if self._maze.map[x-1][y] == Maze.BLOCK:
+        if self._maze.map[x-1][y] == MazeMap.WALL:
             self.image.fill((0,0,0), \
                 (0,             thick_y,        thick_x,         height-thick_y*2))
-        if self._maze.map[x+1][y] == Maze.BLOCK:
+        if self._maze.map[x+1][y] == MazeMap.WALL:
             self.image.fill((0,0,0), \
                 (width-thick_x, thick_y,        thick_x,         height-thick_y*2))
-        if self._maze.map[x][y+1] == Maze.BLOCK:
+        if self._maze.map[x][y+1] == MazeMap.WALL:
             self.image.fill((0,0,0), \
                 (thick_x,       height-thick_y, width-thick_x*2, thick_y         ))
 
 class MazeGraph():
 
-    def __init__(self, maze : Maze, size_x : int, size_y : int):
+    def __init__(self, maze : MazeMap, size_x : int, size_y : int):
         self._maze = maze
         self._size_x = size_x
         self._size_y = size_y
@@ -184,28 +184,28 @@ class MazeGraph():
             maze_y = node.pos_y * 2 + 1
             # UP
             node_nextto = MazeNode(-1, -1) # dummy
-            if self._maze.map[maze_x][maze_y-1] == Maze.FLOOR:
+            if self._maze.map[maze_x][maze_y-1] == MazeMap.FLOOR:
                 node_nextto = self._find_node(node.pos_x, node.pos_y-1)
-            if node_nextto.link[Maze.DOWN] is None:
-                self.links.append(MazeLink(node_nextto, Maze.UP, node, Maze.DOWN))
+            if node_nextto.link[MazeMap.DOWN] is None:
+                self.links.append(MazeLink(node_nextto, MazeMap.UP, node, MazeMap.DOWN))
             # LEFT
             node_nextto = MazeNode(-1, -1) # dummy
-            if self._maze.map[maze_x-1][maze_y] == Maze.FLOOR:
+            if self._maze.map[maze_x-1][maze_y] == MazeMap.FLOOR:
                 node_nextto = self._find_node(node.pos_x-1, node.pos_y)
-            if node_nextto.link[Maze.RIGHT] is None:
-                self.links.append(MazeLink(node_nextto, Maze.LEFT, node, Maze.RIGHT))
+            if node_nextto.link[MazeMap.RIGHT] is None:
+                self.links.append(MazeLink(node_nextto, MazeMap.LEFT, node, MazeMap.RIGHT))
             # RIGHT
             node_nextto = MazeNode(-1, -1) # dummy
-            if self._maze.map[maze_x+1][maze_y] == Maze.FLOOR:
+            if self._maze.map[maze_x+1][maze_y] == MazeMap.FLOOR:
                 node_nextto = self._find_node(node.pos_x+1, node.pos_y)
-            if node_nextto.link[Maze.LEFT] is None:
-                self.links.append(MazeLink(node, Maze.LEFT, node_nextto, Maze.RIGHT))
+            if node_nextto.link[MazeMap.LEFT] is None:
+                self.links.append(MazeLink(node, MazeMap.LEFT, node_nextto, MazeMap.RIGHT))
             # DOWN
             node_nextto = MazeNode(-1, -1) # dummy
-            if self._maze.map[maze_x][maze_y+1] == Maze.FLOOR:
+            if self._maze.map[maze_x][maze_y+1] == MazeMap.FLOOR:
                 node_nextto = self._find_node(node.pos_x, node.pos_y+1)
-            if node_nextto.link[Maze.UP] is None:
-                self.links.append(MazeLink(node, Maze.UP, node_nextto, Maze.DOWN))
+            if node_nextto.link[MazeMap.UP] is None:
+                self.links.append(MazeLink(node, MazeMap.UP, node_nextto, MazeMap.DOWN))
 
     def _find_node(self, x : int, y : int):
         ret = None
@@ -243,31 +243,31 @@ class MazeLink():
             self.weight = 1
 
         self.link = [None for x in range(4)]
-        if dir1 == Maze.UP:
-            self.link[Maze.UP]     = node1
-            node1.link[Maze.DOWN]  = self
-        elif dir1 == Maze.LEFT:
-            self.link[Maze.LEFT]   = node1
-            node1.link[Maze.RIGHT] = self
-        elif dir1 == Maze.RIGHT:
-            self.link[Maze.RIGHT]  = node1
-            node1.link[Maze.LEFT]  = self
-        elif dir1 == Maze.DOWN:
-            self.link[Maze.DOWN]   = node1
-            node1.link[Maze.UP]    = self
+        if dir1 == MazeMap.UP:
+            self.link[MazeMap.UP]     = node1
+            node1.link[MazeMap.DOWN]  = self
+        elif dir1 == MazeMap.LEFT:
+            self.link[MazeMap.LEFT]   = node1
+            node1.link[MazeMap.RIGHT] = self
+        elif dir1 == MazeMap.RIGHT:
+            self.link[MazeMap.RIGHT]  = node1
+            node1.link[MazeMap.LEFT]  = self
+        elif dir1 == MazeMap.DOWN:
+            self.link[MazeMap.DOWN]   = node1
+            node1.link[MazeMap.UP]    = self
 
-        if dir2 == Maze.UP:
-            self.link[Maze.UP]     = node2
-            node2.link[Maze.DOWN]  = self
-        elif dir2 == Maze.LEFT:
-            self.link[Maze.LEFT]   = node2
-            node2.link[Maze.RIGHT] = self
-        elif dir2 == Maze.RIGHT:
-            self.link[Maze.RIGHT]  = node2
-            node2.link[Maze.LEFT]  = self
-        elif dir2 == Maze.DOWN:
-            self.link[Maze.DOWN]   = node2
-            node2.link[Maze.UP]    = self
+        if dir2 == MazeMap.UP:
+            self.link[MazeMap.UP]     = node2
+            node2.link[MazeMap.DOWN]  = self
+        elif dir2 == MazeMap.LEFT:
+            self.link[MazeMap.LEFT]   = node2
+            node2.link[MazeMap.RIGHT] = self
+        elif dir2 == MazeMap.RIGHT:
+            self.link[MazeMap.RIGHT]  = node2
+            node2.link[MazeMap.LEFT]  = self
+        elif dir2 == MazeMap.DOWN:
+            self.link[MazeMap.DOWN]   = node2
+            node2.link[MazeMap.UP]    = self
 
 
 class GraphGroup(pygame.sprite.Group):
@@ -309,13 +309,13 @@ class NodeSprite(pygame.sprite.Sprite):
         width  = self.rect.width
         height = self.rect.height
         self.image.fill((0,0,255), (width//8*3, height//8*3, width//8*2, height//8*2))
-        if self._node.link[Maze.UP].weight >= 0:
+        if self._node.link[MazeMap.UP].weight >= 0:
             self.image.fill((255,0,0), (width//8*3, height//8*0, width//8*2, height//8*2))
-        if self._node.link[Maze.LEFT].weight >= 0:
+        if self._node.link[MazeMap.LEFT].weight >= 0:
             self.image.fill((255,0,0), (width//8*0, height//8*3, width//8*2, height//8*2))
-        if self._node.link[Maze.RIGHT].weight >= 0:
+        if self._node.link[MazeMap.RIGHT].weight >= 0:
             self.image.fill((255,0,0), (width//8*6, height//8*3, width//8*2, height//8*2))
-        if self._node.link[Maze.DOWN].weight >= 0:
+        if self._node.link[MazeMap.DOWN].weight >= 0:
             self.image.fill((255,0,0), (width//8*3, height//8*6, width//8*2, height//8*2))
 
 
@@ -346,7 +346,7 @@ class MazeGame(Game):
         self._size_y    = size_y
         self._size_px_x = size_px_x
         self._size_px_y = size_px_y
-        self._maze      = Maze(size_x*2+1, size_y*2+1)
+        self._maze      = MazeMap(size_x*2+1, size_y*2+1)
         self._mazegrp   = MazeGroup(self._maze, size_x, size_y, size_px_x, size_px_y)
         self._grphgrp   = None
 
